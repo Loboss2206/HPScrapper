@@ -13,6 +13,7 @@ class WebDriverFactory:
     MS_EDGE = "msedge"
     CHROME = "chrome"
     FIREFOX = "firefox"
+    CHROMIUM = "chromium"
     DEFAULT = FIREFOX
 
     @staticmethod
@@ -23,6 +24,8 @@ class WebDriverFactory:
             return ChromeWebDriverHandler()
         elif browser == WebDriverFactory.FIREFOX:
             return FirefoxWebDriverHandler()
+        elif browser == WebDriverFactory.CHROMIUM:
+            return ChromiumWebDriverHandler()
         else:
             raise Exception(f"Unknown browser: {browser}")
 
@@ -57,3 +60,15 @@ class FirefoxWebDriverHandler(IWebDriverHandler):
         options.headless = headless
 
         return webdriver.Firefox(options=options)
+
+class ChromiumWebDriverHandler(IWebDriverHandler):
+    def get_driver(self, headless: bool = True) -> WebDriver:
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        from selenium import webdriver
+
+        options = Options()
+        options.headless = headless
+        options.binary_location = "/usr/bin/chromium"
+
+        return webdriver.Chrome(options=options)
