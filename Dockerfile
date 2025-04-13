@@ -23,6 +23,7 @@ RUN ARCH=$(uname -m) && \
     rm geckodriver.tar.gz
 
 WORKDIR /app
+
 COPY . /app
 
 RUN pip install --no-cache-dir -r requirements.txt
@@ -31,4 +32,9 @@ RUN useradd -m -s /bin/bash botuser
 RUN chown -R botuser:botuser /app
 USER botuser
 
+# Variable d'environnement pour Firefox en mode headless
+ENV MOZ_HEADLESS=1
+ENV PYTHONUNBUFFERED=1
+
+# Commande pour lancer le bot avec Firefox comme driver par défaut
 CMD ["python", "discord_bot_scrapper.py", "--webdriver", "firefox"]
