@@ -3,9 +3,11 @@ import time
 import argparse
 import asyncio
 import discord
+from datetime import datetime
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.keys import Keys
 
 import file_handler
 from webdriver_handler import WebDriverFactory
@@ -20,19 +22,23 @@ DISCORD_CHANNEL_ID = int(DISCORD_CHANNEL_ID)
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--webdriver", "-wd", type=str, default=WebDriverFactory.DEFAULT)
-arg_parser.add_argument("--no-headless", action='store_false', default=True)
+arg_parser.add_argument("--no-headless", action='store_false', default=False)
 args = arg_parser.parse_args()
 
 driver = WebDriverFactory.get(args.webdriver).get_driver(headless=args.no_headless)
 
 def login_and_get_to_notes():
-    driver.get(link)
     driver.find_element(By.ID, 'username').send_keys(login)
     driver.find_element(By.ID, 'password').send_keys(password)
     driver.find_element(By.NAME, 'submit').click()
 
-    WebDriverWait(driver, 10).until(lambda d: d.find_element(By.XPATH, "//header[@title='Les 10 dernières notes']")).click()
+    get_to_notes()
+
+def get_to_notes():
+    WebDriverWait(driver, 10).until(
+        lambda d: d.find_element(By.XPATH, "//header[@title='Les 10 dernières notes']")).click()
     WebDriverWait(driver, 10).until(lambda d: d.find_elements(By.CLASS_NAME, "ie-titre-gros"))
+
 
 def calcDico():
     dico = dict()
@@ -76,6 +82,7 @@ def calcDico():
     dico[cat] = tab
     return dico
 
+
 def isNewNotes(oldDico, dico):
     new_notes = []
     for subject, notes in dico.items():
@@ -85,10 +92,27 @@ def isNewNotes(oldDico, dico):
                 new_notes.append((subject, note))
     return new_notes
 
+
+def is_login_page():
+    try:
+        driver.find_element(By.ID, 'username')
+        return True
+    except:
+        return False
+
+
 @client.event
 async def on_ready():
     print(f"✅ Bot connecté en tant que {client.user}")
-    login_and_get_to_notes()
+
+    driver.get(link)
+    if is_login_page():
+        login_and_get_to_notes()
+    else:
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.XPATH, "//header[@title='Les 10 dernières notes']")).click()
+        WebDriverWait(driver, 10).until(lambda d: d.find_elements(By.CLASS_NAME, "ie-titre-gros"))
+
     oldDico = calcDico()
     await asyncio.sleep(5)
 
@@ -99,9 +123,18 @@ async def on_ready():
 
     while True:
         try:
-            # Recharge la page pour voir les nouvelles notes
-            driver.get(link)
-            login_and_get_to_notes()  # Re-login + accéder à la page des notes
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"[{current_time}] 🔄 Rafraîchissement de la page...")
+            driver.refresh()
+
+            if is_login_page():
+                print(f"[{current_time}] 🛑 Sur la page de login, relogin...")
+                login_and_get_to_notes()
+            else:
+                WebDriverWait(driver, 10).until(
+                    lambda d: d.find_element(By.XPATH, "//header[@title='Les 10 dernières notes']")).click()
+                WebDriverWait(driver, 10).until(lambda d: d.find_elements(By.CLASS_NAME, "ie-titre-gros"))
+
             dico = calcDico()
             new = isNewNotes(oldDico, dico)
             oldDico = dico
@@ -109,15 +142,15 @@ async def on_ready():
             if new:
                 for subject, note in new:
                     msg = f"Nouvelle note en **{subject}** : **{note}**"
-                    print(msg)
+                    print(f"[{current_time}]",msg)
                     await channel.send(msg)
             else:
-                print("✅ Pas de nouvelles notes.")
+                print(f"[{current_time}] ✅ Pas de nouvelles notes.")
 
         except Exception as e:
             print(f"❌ Erreur pendant le refresh : {e}")
 
-        await asyncio.sleep(60)
+        await asyncio.sleep(120)
 
 
 client.run(DISCORD_TOKEN)
