@@ -89,7 +89,6 @@ def isNewNotes(oldDico, dico):
 async def on_ready():
     print(f"✅ Bot connecté en tant que {client.user}")
     login_and_get_to_notes()
-
     oldDico = calcDico()
     await asyncio.sleep(5)
 
@@ -99,16 +98,26 @@ async def on_ready():
         return
 
     while True:
-        dico = calcDico()
-        new = isNewNotes(oldDico, dico)
-        oldDico = dico
-        if new:
-            for subject, note in new:
-                msg = f"Nouvelle note en **{subject}** : **{note}**"
-                print(msg)
-                await channel.send(msg)
-        else:
-            print("✅ Pas de nouvelles notes.")
+        try:
+            # Recharge la page pour voir les nouvelles notes
+            driver.get(link)
+            login_and_get_to_notes()  # Re-login + accéder à la page des notes
+            dico = calcDico()
+            new = isNewNotes(oldDico, dico)
+            oldDico = dico
+
+            if new:
+                for subject, note in new:
+                    msg = f"Nouvelle note en **{subject}** : **{note}**"
+                    print(msg)
+                    await channel.send(msg)
+            else:
+                print("✅ Pas de nouvelles notes.")
+
+        except Exception as e:
+            print(f"❌ Erreur pendant le refresh : {e}")
+
         await asyncio.sleep(60)
+
 
 client.run(DISCORD_TOKEN)
