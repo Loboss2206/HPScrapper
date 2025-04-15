@@ -1,11 +1,47 @@
 # Bot Hyperplanning Scrapper
+Le script discord_bot_scrapper permet de lancer un bot Discord qui enverra un message sur un salon Discord pour avertir à chaque nouvelle note ajoutée dans Hyperplanning.
 
-Le script ```discord_bot_scrapper``` permet de lancer un bot discord qui enverra un message sur un channel discord pour avertir à chaque nouvelle note dans Hyperplanning.
+## Prérequis
+Créez un fichier credentials.txt contenant :
 
-## Pré-requis
+- Ligne 1 : votre login Hyperplanning
 
-- Créer un fichier credentials.txt qui contient une ligne avec votre login Hyperplanning et une deuxième avec votre mot de passe Hyperplanning.
+- Ligne 2 : votre mot de passe Hyperplanning
 
-- Créer un fichier tokens.txt qui contient une ligne avec le token privé de votre bot discord et une deuxième avec l'id du channel sur lequel vous voulez envoyer le message.
+Créez un fichier tokens.txt contenant :
 
-- Faire ```pip install -r requirements.txt``` pour installer les dépendances nécessaires.
+- Ligne 1 : le token privé de votre bot Discord
+
+- Ligne 2 : l’ID du salon sur lequel envoyer les messages
+
+### 🔧 Avec Docker
+- Construire l’image :
+
+```bash
+docker build -t hp-scrapper .
+```
+
+- Lancer le conteneur :
+
+```bash
+docker run --rm -it \
+  -v $(pwd)/credentials.txt:/app/credentials.txt:ro \
+  -v $(pwd)/tokens.txt:/app/tokens.txt:ro \
+  hp-scrapper
+```
+
+### 🐍 Sans Docker
+- Installer les dépendances :
+
+```bash
+pip install -r requirements.txt
+```
+
+- Lancer le script :
+
+```bash
+python discord_bot_scrapper.py
+```
+
+## 🙏 Remerciements
+Merci à [@FlorianLatapie](https://github.com/FlorianLatapie) pour son travail préliminaire qui m’a permis de gagner du temps.
