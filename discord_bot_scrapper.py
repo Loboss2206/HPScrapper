@@ -22,7 +22,7 @@ DISCORD_CHANNEL_ID = int(DISCORD_CHANNEL_ID)
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--webdriver", "-wd", type=str, default=WebDriverFactory.DEFAULT)
-arg_parser.add_argument("--no-headless", action='store_false', default=False)
+arg_parser.add_argument("--no-headless", action='store_false', default=True)
 args = arg_parser.parse_args()
 
 driver = WebDriverFactory.get(args.webdriver).get_driver(headless=args.no_headless)
@@ -141,7 +141,7 @@ async def on_ready():
 
             if new:
                 for subject, note in new:
-                    msg = f"Nouvelle note en **{subject}** : **{note}**"
+                    msg = f"@everyone Nouvelle note en **{subject}** : **{note}**"
                     print(f"[{current_time}]",msg)
                     await channel.send(msg)
             else:
