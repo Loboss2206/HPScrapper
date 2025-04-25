@@ -12,6 +12,8 @@ from selenium.webdriver.common.keys import Keys
 import file_handler
 from webdriver_handler import WebDriverFactory
 
+everyone_message = True
+sleep_time = 120
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
@@ -45,6 +47,7 @@ def calcDico():
     isFirst = True
     cat = ""
     tab = []
+    count = 1
 
     liste_celluleGrid = driver.find_elements(By.CLASS_NAME, "liste_celluleGrid")
 
@@ -68,6 +71,7 @@ def calcDico():
             else:
                 dico[cat] = tab
                 tab = []
+                count = 1
             cat = category
         elif zone_gauche.find_elements(By.XPATH, "./*")[0].tag_name == "time":
             nom_note = zone_centrale \
@@ -76,7 +80,11 @@ def calcDico():
                 .find_elements(By.XPATH, "./*")[-1] \
                 .find_elements(By.XPATH, "./*")[0] \
                 .get_attribute('innerHTML')
-            tab.append(nom_note)
+            if nom_note.startswith("Moyenne TD"):
+                tab.append(f"null{count}")
+                count += 1
+            else:
+                tab.append(nom_note)
         else:
             print("error")
     dico[cat] = tab
@@ -114,7 +122,7 @@ async def on_ready():
         WebDriverWait(driver, 10).until(lambda d: d.find_elements(By.CLASS_NAME, "ie-titre-gros"))
 
     oldDico = calcDico()
-    await asyncio.sleep(5)
+    await asyncio.sleep(sleep_time)
 
     channel = client.get_channel(DISCORD_CHANNEL_ID)
     if not channel:
@@ -136,13 +144,21 @@ async def on_ready():
                 WebDriverWait(driver, 10).until(lambda d: d.find_elements(By.CLASS_NAME, "ie-titre-gros"))
 
             dico = calcDico()
+            print(dico)
             new = isNewNotes(oldDico, dico)
             oldDico = dico
 
             if new:
                 for subject, note in new:
-                    msg = f"@everyone Nouvelle note en **{subject}** : **{note}**"
-                    print(f"[{current_time}]",msg)
+                    if note.startswith("null"):
+                        msg = f"Nouvelle note en **{subject}**"
+                    else:
+                        msg = f"Nouvelle note en **{subject}** : **{note}**"
+
+                    if everyone_message:
+                        msg = f"@everyone {msg}"
+
+                    print(f"[{current_time}]", msg)
                     await channel.send(msg)
             else:
                 print(f"[{current_time}] ✅ Pas de nouvelles notes.")
@@ -150,7 +166,7 @@ async def on_ready():
         except Exception as e:
             print(f"❌ Erreur pendant le refresh : {e}")
 
-        await asyncio.sleep(120)
+        await asyncio.sleep(sleep_time)
 
 
 client.run(DISCORD_TOKEN)
